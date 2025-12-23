@@ -1,0 +1,21 @@
+# Dual LLM Configuration
+
+ollama_base_url: "http://localhost:11434"
+
+llm:
+  evaluator_model: "gemma3:4b"
+  improver_model: "rnj-1:latest"
+
+dataset:
+  range_start: 1
+  range_end: 20
+
+loop:
+  max_iterations: 5
+
+logging:
+  # If true, prints every passing test case. If false, only prints failures.
+  show_all_data_points: false
+  # Max number of failures to print per iteration to avoid flooding console.
+  max_failures_to_log: 5
+  level: INFO

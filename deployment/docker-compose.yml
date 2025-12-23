@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  app:
+    networks:
+      - monitoring_net
+    build: 
+      context: ../
+      dockerfile: deployment/Dockerfile
+    environment:
+      # Use host.docker.internal to access Ollama on the host machine
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://host.docker.internal:3100/loki/api/v1/push"
+        loki-retries: "2"
+        loki-timeout: "1s"
+        keep-file: "true"
+    develop:
+      watch:
+        - action: sync
+          path: ../src
+          target: /app/src
+          ignore:
+            - ../src/**/__pycache__/
+        - action: sync
+          path: ../main.py
+          target: /app/main.py
+        - action: sync
+          path: ../config.yaml
+          target: /app/config.yaml
+        - action: rebuild
+          path: ../requirements.txt
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./config/prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring_net
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./config/loki/loki.yml:/etc/loki/local-config.yaml
+    networks:
+      - monitoring_net
+
+
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - monitoring_net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    privileged: true
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring_net
+
+networks:
+  monitoring_net:
