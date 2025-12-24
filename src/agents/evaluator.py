@@ -8,11 +8,11 @@ class EvaluatorAgent:
         self.model = model_name
         self.client = OllamaClient(base_url=base_url)
 
-    def evaluate(self, input_data, output):
+    def evaluate(self, input_data, output, rule):
         logger.debug(f"Evaluating input: {input_data} -> output: {output}")
         prompt = f"""
         Task: Determine if the output is correct for the given input based on the following rule:
-        Rule: The output should be True if the input number is a Prime Number, and False otherwise.
+        {rule}
 
         Input: {input_data}
         Output: {output}
@@ -23,6 +23,6 @@ class EvaluatorAgent:
         response = self.client.generate(self.model, prompt)
         clean_response = response.strip().upper()
         
-        if "YES" in clean_response:
+        if "TRUE" in clean_response or "YES" in clean_response:
             return True
         return False

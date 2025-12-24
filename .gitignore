@@ -37,3 +37,7 @@ venv.bak/
 *.swp
 *.swo
 .DS_Store
+
+# Outputs
+outputs/
+final_script.py

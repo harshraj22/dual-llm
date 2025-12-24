@@ -11,6 +11,15 @@ class PrimeDataset(BaseDataset):
     def get_data(self):
         return self.data_points
 
+    def get_instruction(self) -> str:
+        return "Rule: The output should be True if the input number is a Prime Number, and False otherwise."
+
+    def __len__(self) -> int:
+        return len(self.data_points)
+    
+    def __getitem__(self, idx):
+        return self.data_points[idx]
+
     def _is_prime(self, n):
         if n <= 1:
             return False

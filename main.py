@@ -86,8 +86,8 @@ def solve(n):
         
         # Header for Table - Using table_logger for clean output
         if show_all:
-             table_logger.info(f"{'Data ID':<36} | {'Script Output':<15} | {'Ground Truth':<15} | {'Agent Check':<15}")
-             table_logger.info("-" * 90)
+             table_logger.info(f"{'Data ID':<36} | {'Script Output':<15} | {'Expected':<10} | {'Agent Check':<15}")
+             table_logger.info("-" * 83)
 
         for data in data_points:
             # Run Script on CONTENT, not the full object
@@ -95,12 +95,17 @@ def solve(n):
             
             # Ground Truth Check - validate handles/expects DataPoint (we updated it) or content
             is_correct_ground_truth = dataset.validate(data, output)
+
+            # Get Expected Value for logging
+            # Since we know this is PrimeDataset, we can calculate it
+            expected_val = dataset._is_prime(data.content)
             
             # Ask Evaluator Agent - Pass Content for context
-            is_correct_agent = evaluator.evaluate(data.content, output)
+            rule = dataset.get_instruction()
+            is_correct_agent = evaluator.evaluate(data.content, output, rule)
             
             # Log ID instead of content
-            status_line = f"{str(data.id):<36} | {str(output):<15} | {str(is_correct_ground_truth):<15} | {str(is_correct_agent):<15}"
+            status_line = f"{str(data.id):<36} | {str(output):<15} | {str(expected_val):<10} | {str(is_correct_agent):<15}"
             
             # Logging Logic
             if not is_correct_agent:
@@ -112,8 +117,8 @@ def solve(n):
                 if not show_all and len(failures) <= max_failures:
                     if len(failures) == 1:
                          # Print header on first failure if not showing all
-                         print(f"{'Data ID':<36} | {'Script Output':<15} | {'Ground Truth':<15} | {'Agent Check':<15}")
-                         print("-" * 90)
+                         print(f"{'Data ID':<36} | {'Script Output':<15} | {'Expected':<10} | {'Agent Check':<15}")
+                         print("-" * 83)
                     print(status_line)
             else:
                 correct_count += 1
@@ -128,9 +133,14 @@ def solve(n):
         
         if len(failures) == 0:
             logger.info("SUCCESS! The script has passed all evaluations.")
-            with open("final_script.py", "w") as f:
+            
+            output_dir = "outputs"
+            os.makedirs(output_dir, exist_ok=True)
+            output_path = os.path.join(output_dir, "final_script.py")
+            
+            with open(output_path, "w") as f:
                 f.write(current_script)
-            logger.info("Saved to final_script.py")
+            logger.info(f"Saved to {output_path}")
             break
             
         if i == max_iterations - 1:
